@@ -1,0 +1,55 @@
+//
+//  BMAC.ned
+//  Matthew Ireland, University of Cambridge
+//  27th November MMXIII
+//
+//  Default parameters and values in the B-MAC protocol.
+// 
+ 
+ package node.communication.mac.bMac;
+ 
+ simple BMAC like node.communication.mac.iMac {
+  parameters:
+    // compulsary parameters (from documentation)
+   	bool collectTraceInfo = default(true);
+	int macMaxPacketSize = default(0);	// in bytes
+	int macBufferSize = default(16);		// in number of messages
+	//int macPacketOverhead = default(11);
+	int macPacketOverhead = default(20);
+
+  	// physical layer parameters (defaults copied from Castalia documentation)
+  	// note that phyDelayForValidCS does indeed need to be so long to allow for an accurate RSSI integration
+	double phyDelayForValidCS = default (0.128);
+	double phyDataRate = default (250);
+	int phyFrameOverhead = default (6);
+	
+	double wakeupDelay = default(0.0005);   // set experimentally (seconds)
+	double listenPeriod = default(0.1);     // time that we'll time out after waiting for a packet: preamble length + a bit
+	double checkPeriod = default(0.25);       // UNUSED!!! = (preamble time) minus (phyDelayForValidCS) minus (a fiddle-factor)
+	double interAckPeriod = default(0.03);  // silly name for inter-preamble period
+	int preamblePacketLength = default(1000);    // preamble length, in bytes (determines how often node must wake up) 1000 bytes = 0.032s transmission
+	double maxDataDelay = default(0.1);     // maximum of time we will wait for data after acknowledging a preamble (seconds)
+	double maxAckDelay = default(0.1);      // maximum time we'll wait for an ack after sending data, before retrying (seconds)
+	int maxDataSendDelay = default(20);     // maximum random delay before sending out data packet, in ms
+	double maxBroadcastDataDelay = default(0.1);  // maximum of time we'll spend waiting for a broadcast packet (ms)
+	double waitForAckTxTime = default(0.0003);
+	double dataGap = default(0.00025);     // gap between finishing sending preamble and sending data packet
+	
+	bool useComplexIncrementMethod = default(false);
+  
+  	// debug parameters
+  	bool printDebugInfo = default(true);
+  	bool sendDataEnabled = default(true);   // set to false to stop this node from ever accepting data from the network layer or above
+  	
+	int sinkMacAddress = default(1);
+	
+	int maxBackoff = default(1024);    // in ms, the maximum backoff
+
+ gates:
+	output toNetworkModule;
+	output toRadioModule;
+	input fromNetworkModule;
+	input fromRadioModule;
+	input fromCommModuleResourceMgr;
+ 
+ }
