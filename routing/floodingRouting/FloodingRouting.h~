@@ -1,0 +1,45 @@
+/*
+ * FloodingRouting.h
+ * Matthew Ireland, University of Cambridge
+ * 27th December MMXIII
+ */
+
+
+#ifndef _FLOODING_H_
+#define _FLOODING_H_
+
+#include <map>
+#include <string>
+#include "VirtualRouting.h"
+#include "Neighbour.h"
+#include "../neighbours/NeighbourList.h"
+#include "../RemoteSequenceNumbers.h"
+#include "FloodingRoutingPacket_m.h"
+
+using namespace std;
+
+enum FloodingRoutingTimers {
+  FR_TIMER_STARTUP
+};
+
+class FloodingRouting: public VirtualRouting {
+ private:
+	int mySeqNumber;       // sequence number for data packets originating here
+	RemoteSequenceNumbers sequenceNumbers;  // seq numbers for remote stations
+	NeighbourList* neighbourList;
+	bool isSink, printDebugInfo, startupComplete;
+	int minStartupDelay, maxStartupDelay;
+
+	/**** timer callbacks ****/
+	void handleStartupTimerCallback();
+	/**** end timer callbacks ****/
+
+ protected:
+	void startup();
+	void fromApplicationLayer(cPacket *, const char *);
+	void fromMacLayer(cPacket *, int, double, double);
+	void handleFloodingRoutingControlMessage(cMessage* msg);
+	void timerFiredCallback(int);
+};
+
+#endif              // _FLOODING_H_

@@ -1,0 +1,27 @@
+/*
+ * Neighbour.h
+ *
+ *  Created on: Dec 27, 2013
+ *      Author: mti20
+ */
+
+#ifndef NEIGHBOUR_H_
+#define NEIGHBOUR_H_
+
+#include "VirtualRouting.h"
+
+class Neighbour : public VirtualRouting {
+private:
+	int macAddress;
+	int timestamp;
+public:
+	Neighbour(const int macAddress);
+	virtual ~Neighbour();
+	bool operator==(const Neighbour& other);  // two neighbours are equal if they have equal macaddresses
+	bool operator!=(const Neighbour& other);
+	int getMacAddress() const;
+	int getTimestamp() const;
+	void updateTimestamp();
+};
+
+#endif /* NEIGHBOUR_H_ */

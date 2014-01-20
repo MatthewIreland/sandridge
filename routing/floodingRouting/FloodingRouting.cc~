@@ -1,0 +1,171 @@
+/*
+ * FloodingRouting.cc
+ * Matthew Ireland, University of Cambridge
+ * 27th December MMXIII
+ */
+
+
+#include "FloodingRouting.h"
+#include "FloodingRoutingPacket_m.h"
+#include <ctime> 
+#include <cstdlib>
+
+Define_Module(FloodingRouting);
+
+void FloodingRouting::startup() {
+  startupComplete = false;
+
+	/* Check that the Application module used has the boolean parameter "isSink"
+	 * If we are the sink, then we pass data up to the application layer,
+	 * otherwise we simply forward it (the sink node(s) do(es) not forward data).
+	 */
+  	cModule *appModule = getParentModule()->getParentModule()->getSubmodule("Application");
+  	if (appModule->hasPar("isSink")) {
+  		isSink = appModule->par("isSink");
+  	} else {
+  		opp_error("\nFlooding routing has to be used with an application that defines the parameter isSink");  // TODO split over 2 lines
+  	}
+
+  	printDebugInfo = par("printDebugInfo");
+
+	/* after some random time, make sure our neighbours know about us */
+	int seed = *SELF_NETWORK_ADDRESS;    // seed with a number unique to us, otherwise all nodes will have the same startup delay (converts const char* to int)
+	srand(seed);
+	minStartupDelay = par("minStartupDelay");
+	maxStartupDelay = par("maxStartupDelay");
+	int startupDelay = minStartupDelay+(rand() % (maxStartupDelay-minStartupDelay));
+	setTimer(FR_TIMER_STARTUP, startupDelay);
+  	if (printDebugInfo)
+	  trace() << "Sending startup packet in " << startupDelay << " seconds.";
+
+	neighbourList = new NeighbourList(this);
+
+}
+
+void FloodingRouting::timerFiredCallback(int timer) {
+	switch(timer) {
+	case FR_TIMER_STARTUP:   handleStartupTimerCallback(); break;
+	default: trace() << "ERROR: Unrecognised timer callback.";
+	}
+}
+
+void FloodingRouting::handleStartupTimerCallback() {
+  	/* make sure our neighbours know about us */
+  	if (printDebugInfo)
+  		trace() << "Sending setup packet.";
+  	FloodingRoutingPacket* setupPacket = new FloodingRoutingPacket("flooding routing setup packet", NETWORK_LAYER_PACKET);
+  	setupPacket->setFloodingRoutingPacketKind(SETUP_PACKET);
+  	setupPacket->setSource(SELF_NETWORK_ADDRESS);
+  	setupPacket->setDestination(BROADCAST_NETWORK_ADDRESS);
+  	toMacLayer(setupPacket, BROADCAST_MAC_ADDRESS);
+
+	trace() << "Initialisation complete.";
+	startupComplete = true;
+}
+
+
+void FloodingRouting::fromMacLayer(cPacket* pkt, int srcMacAddress,
+		double RSSI, double LQI) {
+  // srcMacAddress is the last hop mac address
+	/*
+	 *  Firstly, add the mac address from which we received the packet to
+	 *  our list of neighbours.
+	 */
+  	if (printDebugInfo)
+    		trace() << "Adding " << srcMacAddress << " to neighbour list.";
+    	neighbourList->add(new Neighbour(srcMacAddress, this));
+
+	/*
+	 *  Now, process the packet. If we've seen it before, ignore it. If not,
+	 *  pass it up to the application layer if we are the sink. Otherwise,
+	 *  forward it to all neighbours except the one it came from.
+	 */
+  	int dstMacAddress;
+  	FloodingRoutingPacket *netPacket = dynamic_cast <FloodingRoutingPacket*>(pkt);
+
+  	if (!netPacket) {
+  		trace() << "Error casting received packet.";
+  		return;
+  	}
+
+  	int thisSeqNumber = netPacket->getSequenceNumber();
+  	const char* sourceNetAddress = netPacket->getSource();
+  	//if (!(sequenceNumbers.isNewMessage(sourceNetAddress, thisSeqNumber))) {   // TODO
+  	if (!isNotDuplicatePacket(pkt)) {
+  		if (printDebugInfo)
+  			trace() << "Already seen this packet, ignoring";
+  		return;
+  	} else {
+	  if (printDebugInfo)
+	    trace() << "Packet received at routing layer was unique.";
+	}
+
+  	switch (netPacket->getFloodingRoutingPacketKind()) {
+  	case FLOODING_DATA_PACKET : {
+	  trace() << "Got a flooding data packet";
+		/*
+		 *  If we are the sink node, then we pass the data up to the next layer
+		 *  and do not forward it.
+		 */
+  		if (isSink) {
+  			toApplicationLayer(pkt->decapsulate());
+  		} else {
+		  // first, get list of current neighbours
+  			list<Neighbour*> neighbours = neighbourList->pickAllNeighbours();
+  			list<Neighbour*>::const_iterator it;
+			// now forward the packet to all neighbours (except the one it came from)
+  			for (it = neighbours.begin(); it != neighbours.end(); ++it) {
+			  if ((dstMacAddress = (*it)->getMacAddress()) != srcMacAddress) {  // don't want to forward back to the node it came from (pointless)
+			    trace() << "Forwarding packet to " << dstMacAddress;
+  					toMacLayer(netPacket, dstMacAddress);
+			  }
+  			}
+  		}
+  		break;
+  	}
+  	case SETUP_PACKET : {
+  		// we've already added to the neighbour list. nothing to do here.
+	  trace() << "Got a flooding setup packet";
+  		break;
+  	}
+  //	default : {
+  //		trace() << "Unrecognised packet received.";
+  //		return;
+  //	}
+  	}
+  //
+ }
+
+/*
+ * When we receive data from the application layer, send it to all neighbours.
+ */
+void FloodingRouting::fromApplicationLayer(cPacket * pkt,
+		const char *destination) {
+  if (!startupComplete)
+    return;
+
+	// encapsulate the packet...
+  trace() << "app method called";
+  	FloodingRoutingPacket *netPacket = new FloodingRoutingPacket
+  			("FloodingRouting packet", NETWORK_LAYER_PACKET);
+  	encapsulatePacket(netPacket, pkt);
+  	netPacket->setSource(SELF_NETWORK_ADDRESS);
+	netPacket->setFloodingRoutingPacketKind(FLOODING_DATA_PACKET);
+  	netPacket->setDestination(destination);
+  //
+  //	// ...increment our sequence number...
+  //	netPacket->setSequenceNumber(++mySeqNumber);
+  //
+  //	// ...and forward it to all neighbours
+  //	list<Neighbour*> neighbours = neighbourList->pickNeighbours();
+  //	list<Neighbour*>::const_iterator it;
+  //	for (it = neighbours.begin(); it != neighbours.end(); ++it) {
+  //		if (printDebugInfo)
+  //			trace() << "Forwarding packet to neighbour " << (*it)->getMacAddress();
+  //		toMacLayer(netPacket, (*it)->getMacAddress());
+  //	}
+
+	// tmp - delete
+	toMacLayer(netPacket, BROADCAST_MAC_ADDRESS);
+	// end tmp - delete
+}

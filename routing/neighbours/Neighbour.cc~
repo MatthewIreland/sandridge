@@ -1,0 +1,38 @@
+/*
+ * Neighbour.cpp
+ *
+ *  Created on: Dec 27, 2013
+ *      Author: mti20
+ */
+
+#include "Neighbour.h"
+#include "VirtualRouting.h"
+
+Neighbour::Neighbour(const int macAddress) : macAddress(macAddress) {
+  trace() << "Constructing new neighbour from node " << macAddress;
+	timestamp = 0;  // TODO
+}
+
+Neighbour::~Neighbour() {
+	// TODO Auto-generated destructor stub
+}
+
+bool Neighbour::operator==(const Neighbour& other) {
+	return macAddress == other.macAddress;
+}
+
+bool Neighbour::operator!=(const Neighbour& other) {
+	return !(*this == other);
+}
+
+int Neighbour::getMacAddress() const {
+	return macAddress;
+}
+
+void Neighbour::updateTimestamp() {
+	// TODO
+}
+
+int Neighbour::getTimestamp() const {
+	return 0;   // TODO
+}

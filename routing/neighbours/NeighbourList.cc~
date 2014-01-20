@@ -1,0 +1,45 @@
+/*
+ * NeighbourList.cpp
+ *
+ *  Created on: Dec 27, 2013
+ *      Author: mti20
+ */
+
+#include "NeighbourList.h"
+
+NeighbourList::NeighbourList() : castaliaModule(castaliaModule) {
+	neighbourList = list<Neighbour*>();
+}
+
+NeighbourList::~NeighbourList() {
+	// everything on the stack, nothing to do here :)
+}
+
+/*
+ *  Should be called whenever we receive a packet from station at the MAC layer.
+ */
+void NeighbourList::add(Neighbour* newNeighbour) {
+  castaliaModule->trace() << "NeighbourList: Received new neighbour.";
+	int newMacAddress = newNeighbour->getMacAddress();
+//	if (newMacAddress == SELF_MAC_ADDRESS)  // purely for robustness - make sure
+//		return;                             // we can't add ourself
+	list<Neighbour*>::const_iterator it;
+	for (it = neighbourList.begin(); it != neighbourList.end(); ++it) {
+		if ((*it) == newNeighbour) {
+			(*it)->updateTimestamp();
+			return;
+		}
+	}
+	neighbourList.push_back(newNeighbour);
+}
+
+/*
+ * Used in flooding routing.
+ */
+list<Neighbour*> NeighbourList::pickAllNeighbours() {
+	return neighbourList;
+}
+
+void clean() {
+	return;   // TODO, with NEIGHBOUR_TIMEOUT
+}

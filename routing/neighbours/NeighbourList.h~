@@ -1,0 +1,33 @@
+/*
+ * NeighbourList.h
+ *
+ *  Created on: Dec 27, 2013
+ *      Author: mti20
+ */
+
+#ifndef NEIGHBOURLIST_H_
+#define NEIGHBOURLIST_H_
+
+#include <list>
+#include "Neighbour.h"
+
+class Neighbour;
+
+using namespace std;
+
+#define NEIGHBOUR_TIMEOUT 999999999
+
+class NeighbourList {
+protected:
+	list<Neighbour*> neighbourList;
+public:
+	NeighbourList();
+	virtual ~NeighbourList();
+	void add(Neighbour* newNeighbour);   // adds neighbour if not already in list, otherwise updates timestamp
+	void clean();   // cleans neighbours whose timestamps are older than certain amount
+	//	virtual list<Neighbour*> pickNeighbours() = 0;   // TODO reinstate this nice class hierarchy
+	list<Neighbour*> pickAllNeighbours();
+	list<Neighbour*> pickRandomNeighbour();
+};
+
+#endif /* NEIGHBOURLIST_H_ */
