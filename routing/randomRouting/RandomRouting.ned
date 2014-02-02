@@ -1,0 +1,56 @@
+// ******************************************************
+// * RandomRouting.ned                                  *
+// * Matthew Ireland, University of Cambridge           *
+// * 2nd January MMXIV                                  *
+// *                                                    *
+// * Default parameters and values in the Random        *
+// * Routing protocol.                                  *
+// *                                                    *
+// *****************************************************/
+ 
+ package node.communication.routing.randomRouting;
+ 
+ simple RandomRouting like node.communication.routing.iRouting {
+  parameters:
+	bool collectTraceInfo = default (true);
+	int maxNetFrameSize = default (0);  // no limit
+	int netBufferSize = default (32);
+	int netDataFrameOverhead = default(14);	
+	
+ 	bool printDebugInfo = default (true); 
+	// both of the following in seconds
+	int  minStartupDelay = default(10);      // random startup delay will be some
+	int  maxStartupDelay = default(30);      // number between min and max
+	int endTime = default(600);              // in seconds, cannot originate new data after this time
+	//int dieTime = default(600);              // in seconds, node will not respond after this time
+	int dieTime = default(99999);              // in seconds, node will not respond after this time
+	
+	// if this is set, node should die after die time
+	bool nodeShouldDie = default(false);
+	
+	int neighbourTimeout = default(150);
+	//int neighbourTimeout = default(10);
+	
+	int neighbourOldAge = default(100);   // length of time that can elapse before we treat the neighbour as old
+	int rediscoverTime = default(80);
+	
+	// if true, don't send it back to where it came from
+	bool implementHeuristicOne   = default(true);   
+	
+	// if true, send it directly to the sink if it's in the neighbour list
+	bool implementHeuristicTwo   = default(true);   
+	
+	// if true, don't send it to the same neighbour twice, if there's a choice
+	bool implementHeuristicThree = default(true);   
+
+	int strength = default(1);
+	
+	int sinkMacAddress = default(40);
+ 		
+  gates:
+	output toCommunicationModule;
+	output toMacModule;
+	input fromCommunicationModule;
+	input fromMacModule;
+	input fromCommModuleResourceMgr;
+ }
