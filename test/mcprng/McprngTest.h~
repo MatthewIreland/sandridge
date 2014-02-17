@@ -1,0 +1,29 @@
+/*
+ * McprngTest.h
+ *
+ *  Created on: Jan 24, 2014
+ *      Author: mti20
+ */
+
+#ifndef MACBUFFERTEST_H_
+#define MACBUFFERTEST_H_
+
+#include "../cpptest/src/cpptest.h"
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+
+using namespace std;
+
+class McprngTest : public Test::Suite {
+public:
+	McprngTest();
+
+private:
+	void test_fifo();
+	void test_capacity();
+	//void test_debuf();
+
+};
+
+#endif /* MACBUFFERTEST_H_ */
